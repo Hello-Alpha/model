@@ -63,12 +63,12 @@ function show() {
     // Here's where we call the routine that builds all the
     // objects we'll be drawing.
     const texture = [
-        loadTexture(gl, pic),    //front
-        loadTexture(gl, pic),    //back
-        loadTexture(gl, pic),    //top
-        loadTexture(gl, pic),    //bottom
-        loadTexture(gl, pic),    //right
-        loadTexture(gl, pic)     //left
+        loadTexture(gl, "https://hello-alpha.github.io/model/cubetexture.png"),    //front
+        loadTexture(gl, "https://hello-alpha.github.io/model/cubetexture.png"),    //back
+        loadTexture(gl, "https://hello-alpha.github.io/model/cubetexture.png"),    //top
+        loadTexture(gl, "https://hello-alpha.github.io/model/cubetexture.png"),    //bottom
+        loadTexture(gl, "https://hello-alpha.github.io/model/cubetexture.png"),    //right
+        loadTexture(gl, "https://hello-alpha.github.io/model/cubetexture.png")     //left
     ];
     const center = [
         [0.0, 0.0, 0.0],
