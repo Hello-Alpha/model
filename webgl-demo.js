@@ -1,4 +1,5 @@
 var cubeRotation = 1.0;
+var en_rotate = true;
 
 
 show();
@@ -63,16 +64,16 @@ function show() {
     // Here's where we call the routine that builds all the
     // objects we'll be drawing.
     const texture = [
-        loadTexture(gl, "cubetexture.png"),    //front
-        loadTexture(gl, "cubetexture.png"),    //back
-        loadTexture(gl, "cubetexture.png"),    //top
-        loadTexture(gl, "cubetexture.png"),    //bottom
-        loadTexture(gl, "cubetexture.png"),    //right
-        loadTexture(gl, "cubetexture.png")     //left
+        loadTexture(gl, "front.png"),    //front
+        loadTexture(gl, "back.png"),    //back
+        loadTexture(gl, "top.png"),    //top
+        loadTexture(gl, "bottom.png"),    //bottom
+        loadTexture(gl, "right.png"),    //right
+        loadTexture(gl, "left.png")     //left
     ];
     const center = [
         [0.0, 0.0, 0.0],
-        [0.0, 1.0, 0.0]
+        [0.0, 1.2, 0.0]
     ];
     const size = [
         1.0,    //length
@@ -88,22 +89,22 @@ function show() {
 
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    for (var cube_index = 0; cube_index < center.length; cube_index++){
-        drawOneCube(gl, programInfo, center[cube_index], size, texture);
+
+
+    var then = 0.0;
+    // Draw the scene repeatedly
+    function render(now) {
+        now *= 0.001;  // convert to seconds
+        const deltaTime = now - then;
+        then = now;
+
+        for (var cube_index = 0; cube_index < center.length; cube_index++) {
+            drawOneCube(gl, programInfo, center[cube_index], size, texture, deltaTime);
+        }
+        cubeRotation += en_rotate * deltaTime;
+        requestAnimationFrame(render);
     }
-
-
-    // // Draw the scene repeatedly
-    // function render(now) {
-    //     now *= 0.001;  // convert to seconds
-    //     const deltaTime = now - then;
-    //     then = now;
-
-    //     drawOneCube(gl, programInfo, buffers, texture, deltaTime);
-
-    //     requestAnimationFrame(render);
-    // }
-    // requestAnimationFrame(render);
+    requestAnimationFrame(render);
 }
 
 //初始化一个面的buffer
@@ -193,7 +194,7 @@ function isPowerOf2(value) {
 //
 // Draw the scene.
 //
-function drawOneCube(gl, programInfo, center, size, texture) {
+function drawOneCube(gl, programInfo, center, size, texture,deltaTime) {
     var vertex = [];
     {
         vertex.push(center[0] + size[1] / 2); vertex.push(center[1] + size[0] / 2); vertex.push(center[2] + size[2] / 2);
@@ -240,7 +241,7 @@ function drawOneCube(gl, programInfo, center, size, texture) {
 }
 
 
-function drawOneFace(gl, programInfo, buffers, texture) {
+function drawOneFace(gl, programInfo, buffers, texture,deltaTime) {
     // Create a perspective matrix, a special matrix that is
     // used to simulate the distortion of perspective in a camera.
     // Our field of view is 45 degrees, with a width/height
@@ -351,7 +352,6 @@ function drawOneFace(gl, programInfo, buffers, texture) {
         const offset = 0;
         gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
     }
-
 }
 
 //
