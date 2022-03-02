@@ -9,7 +9,7 @@ show();
 //
 function show() {
     const canvas = document.querySelector('#glcanvas');
-    const gl = canvas.getContext('webgl');
+    const gl = canvas.getContext('webgl', {preserveDrawingBuffer: true});
 
     // If we don't have a GL context, give up now
 
@@ -80,7 +80,13 @@ function show() {
         0.8,    //width
         0.6     //height
     ]
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
+
+
+    var then = 0.0;
+    // Draw the scene repeatedly
+    function render(now) {
+
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
     gl.enable(gl.DEPTH_TEST);           // Enable depth testing
     gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
@@ -91,9 +97,6 @@ function show() {
 
 
 
-    var then = 0.0;
-    // Draw the scene repeatedly
-    function render(now) {
         now *= 0.001;  // convert to seconds
         const deltaTime = now - then;
         then = now;
