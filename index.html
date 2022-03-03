@@ -15,23 +15,34 @@
 
 <body>
   <canvas id="glcanvas" width="640" height="480"></canvas>
+
+  <input id="range" type="range" min="1000" max="10000" step="500" value="3000" oninput="change()" onchange="change()">
+  <span id="value">3 sec</span>
   <div style="position: absolute;top:0px;left:0px;">
     <button type="button" name="button" onclick="saveFile()">下载</button>
     <button type="button" name="button" onclick="startscreenshot()">开始定时截图</button>
     <button type="button" name="button" onclick="endscreenshot()">停止定时截图</button>
   </div>
+  <script>
+    var val;
+    function change() {
+      val = document.getElementById('range').value;
+      console.log(val);
+      // document.write(val);
+      document.getElementById('value').innerHTML = val / 1000 + ' sec';
+    }
+
+    function startscreenshot() {
+      val = setInterval(saveFile, 3000);
+    }
+
+    function endscreenshot() {
+      clearInterval(val);
+    }
+  </script>
 </body>
+
+
 
 </html>
 
-<script>
-  var val = 0;
-
-  function startscreenshot(){
-    val = setInterval(saveFile, 3000);
-  }
-
-  function endscreenshot(){
-    clearInterval(val);
-  }
-</script>
