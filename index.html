@@ -17,7 +17,21 @@
   <canvas id="glcanvas" width="640" height="480"></canvas>
   <div style="position: absolute;top:0px;left:0px;">
     <button type="button" name="button" onclick="saveFile()">下载</button>
+    <button type="button" name="button" onclick="startscreenshot()">开始定时截图</button>
+    <button type="button" name="button" onclick="endscreenshot()">停止定时截图</button>
   </div>
 </body>
 
 </html>
+
+<script>
+  var val = 0;
+
+  function startscreenshot(){
+    val = setInterval(saveFile, 3000);
+  }
+
+  function endscreenshot(){
+    clearInterval(val);
+  }
+</script>
