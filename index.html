@@ -16,8 +16,17 @@
 <body>
   <canvas id="glcanvas" width="640" height="480"></canvas>
 
-  <input id="range" type="range" min="1000" max="10000" step="500" value="3000" oninput="change()" onchange="change()">
+  <div>
+  <label>截图间隔时间</label><input id="range" type="range" min="1000" max="10000" step="500" value="3000" oninput="change()" onchange="change()">
   <span id="value">3 sec</span>
+  </div>
+  <div>
+  <label>镜头距离</label><input id="far" type="range" min="-10" max="-1" step="0.3" value="-6" oninput="change_dist()"
+    onchange="change_dist()">
+  <span id="dist_value">-6</span>
+
+  </div>
+
   <div style="position: absolute;top:0px;left:0px;">
     <button type="button" name="button" onclick="saveFile()">下载</button>
     <button type="button" name="button" onclick="startscreenshot()">开始定时截图</button>
@@ -27,7 +36,7 @@
     var val;
     function change() {
       val = document.getElementById('range').value;
-      console.log(val);
+      // console.log(val);
       // document.write(val);
       document.getElementById('value').innerHTML = val / 1000 + ' sec';
     }

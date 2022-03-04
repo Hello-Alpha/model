@@ -1,6 +1,6 @@
 var cubeRotation = 1.0;
 var en_rotate = true;
-
+var dist = -6
 
 show();
 
@@ -275,11 +275,15 @@ function drawOneFace(gl, programInfo, buffers, texture,deltaTime) {
 
     mat4.translate(modelViewMatrix,     // destination matrix
         modelViewMatrix,     // matrix to translate
-        [-0.0, 0.0, -6.0]);  // amount to translate
+        [-0.0, 0.0, dist]);  // amount to translate
     mat4.rotate(modelViewMatrix,  // destination matrix
         modelViewMatrix,  // matrix to rotate
         cubeRotation,     // amount to rotate in radians
         [0, 0, 1]);       // axis to rotate around (Z)
+    mat4.rotate(modelViewMatrix,  // destination matrix
+        modelViewMatrix,  // matrix to rotate
+        cubeRotation * .5,// amount to rotate in radians
+        [1, 0, 0]);       // axis to rotate around (Y)
     mat4.rotate(modelViewMatrix,  // destination matrix
         modelViewMatrix,  // matrix to rotate
         cubeRotation * .7,// amount to rotate in radians
@@ -421,4 +425,9 @@ function sign(index, axis) {
         else return -1;
     }
     return 0;
+}
+
+function change_dist() {
+    dist = document.getElementById('far').value;
+    document.getElementById('dist_value').innerHTML = dist;
 }
