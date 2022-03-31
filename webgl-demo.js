@@ -1,6 +1,10 @@
+//用注释"===="包含的部分是可以更改的部分
 var cubeRotation = 1.0;
 var en_rotate = true;
-var dist = -6
+var dist = -5;
+var phi = -0.5;
+var theta = 0.5;
+var bbox = [];  // bounding box: x, y, 宽， 高
 
 show();
 
@@ -9,7 +13,7 @@ show();
 //
 function show() {
     const canvas = document.querySelector('#glcanvas');
-    const gl = canvas.getContext('webgl', {preserveDrawingBuffer: true});
+    const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
 
     // If we don't have a GL context, give up now
 
@@ -71,29 +75,32 @@ function show() {
         loadTexture(gl, "right.png"),    //right
         loadTexture(gl, "left.png")     //left
     ];
+    //=========================================
     const center = [
         [0.0, 0.0, 0.0],
-        [0.0, 1.2, 0.0]
+        [0.0, 0.0, 1.0],
+        [0.0, 1.0, 0.0],
+        [0.0, 1.0, 1.0]
     ];
     const size = [
         1.0,    //length
-        0.8,    //width
-        0.6     //height
+        0.7,    //width
+        1.0     //height
     ]
-
+    //=========================================
 
     var then = 0.0;
     // Draw the scene repeatedly
     function render(now) {
 
-            gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
-    gl.clearDepth(1.0);                 // Clear everything
-    gl.enable(gl.DEPTH_TEST);           // Enable depth testing
-    gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
+        gl.clearColor(0.5, 0.5, 0.5, 1.0);  // Clear to black, fully opaque
+        gl.clearDepth(1.0);                 // Clear everything
+        gl.enable(gl.DEPTH_TEST);           // Enable depth testing
+        gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
 
-    // Clear the canvas before we start drawing on it.
+        // Clear the canvas before we start drawing on it.
 
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 
 
@@ -101,10 +108,12 @@ function show() {
         const deltaTime = now - then;
         then = now;
 
+        bbox = [];
         for (var cube_index = 0; cube_index < center.length; cube_index++) {
             drawOneCube(gl, programInfo, center[cube_index], size, texture, deltaTime);
         }
         cubeRotation += en_rotate * deltaTime;
+
         requestAnimationFrame(render);
     }
     requestAnimationFrame(render);
@@ -194,57 +203,8 @@ function isPowerOf2(value) {
     return (value & (value - 1)) == 0;
 }
 
-//
-// Draw the scene.
-//
-function drawOneCube(gl, programInfo, center, size, texture,deltaTime) {
-    var vertex = [];
-    {
-        vertex.push(center[0] + size[1] / 2); vertex.push(center[1] + size[0] / 2); vertex.push(center[2] + size[2] / 2);
-        vertex.push(center[0] - size[1] / 2); vertex.push(center[1] + size[0] / 2); vertex.push(center[2] + size[2] / 2);
-        vertex.push(center[0] + size[1] / 2); vertex.push(center[1] - size[0] / 2); vertex.push(center[2] + size[2] / 2);
-        vertex.push(center[0] - size[1] / 2); vertex.push(center[1] - size[0] / 2); vertex.push(center[2] + size[2] / 2);
-        vertex.push(center[0] + size[1] / 2); vertex.push(center[1] + size[0] / 2); vertex.push(center[2] - size[2] / 2);
-        vertex.push(center[0] - size[1] / 2); vertex.push(center[1] + size[0] / 2); vertex.push(center[2] - size[2] / 2);
-        vertex.push(center[0] + size[1] / 2); vertex.push(center[1] - size[0] / 2); vertex.push(center[2] - size[2] / 2);
-        vertex.push(center[0] - size[1] / 2); vertex.push(center[1] - size[0] / 2); vertex.push(center[2] - size[2] / 2);
-    }
-    const indices = [
-        2, 0, 4, 6,    // front
-        1, 3, 7, 5,    // back
-        3, 1, 0, 2,   // top
-        6, 4, 5, 7,   // bottom
-        0, 1, 5, 4,   // right
-        3, 2, 6, 7   // left
-    ];
 
-    const textureCoordinates = [
-        0.0, 0.0,
-        1.0, 0.0,
-        1.0, 1.0,
-        0.0, 1.0
-    ];
-    var buffers;
-    var positions;
-    var index;
-
-    for (let face_index = 0; face_index < 6; face_index++){
-        positions = [];
-        for (var i = 0; i < 4; i++){
-            for (var j = 0; j < 3; j++){
-                positions.push(vertex[indices[face_index * 4 + i] * 3 + j]);
-            }
-        }
-        index = [
-            0, 1, 2, 0, 2, 3
-        ];
-        buffers = initBuffers(gl, positions, textureCoordinates, index);
-        drawOneFace(gl, programInfo, buffers, texture[face_index]);
-    }
-}
-
-
-function drawOneFace(gl, programInfo, buffers, texture,deltaTime) {
+function createMatrix(gl) {
     // Create a perspective matrix, a special matrix that is
     // used to simulate the distortion of perspective in a camera.
     // Our field of view is 45 degrees, with a width/height
@@ -276,19 +236,211 @@ function drawOneFace(gl, programInfo, buffers, texture,deltaTime) {
     mat4.translate(modelViewMatrix,     // destination matrix
         modelViewMatrix,     // matrix to translate
         [-0.0, 0.0, dist]);  // amount to translate
+    // mat4.rotate(modelViewMatrix,  // destination matrix
+    //     modelViewMatrix,  // matrix to rotate
+    //     1,     // amount to rotate in radians
+    //     [0, 0, 1]);       // axis to rotate around (Z)
     mat4.rotate(modelViewMatrix,  // destination matrix
         modelViewMatrix,  // matrix to rotate
-        cubeRotation,     // amount to rotate in radians
-        [0, 0, 1]);       // axis to rotate around (Z)
+        theta * Math.PI,// amount to rotate in radians
+        [-1, 0, 0]);       // axis to rotate around (Y)
     mat4.rotate(modelViewMatrix,  // destination matrix
         modelViewMatrix,  // matrix to rotate
-        cubeRotation * .5,// amount to rotate in radians
-        [1, 0, 0]);       // axis to rotate around (Y)
-    mat4.rotate(modelViewMatrix,  // destination matrix
-        modelViewMatrix,  // matrix to rotate
-        cubeRotation * .7,// amount to rotate in radians
-        [0, 1, 0]);       // axis to rotate around (X)
+        phi * Math.PI,// amount to rotate in radians
+        [0, 0, 1]);       // axis to rotate around (X)
 
+    return {
+        projectionMatrix: projectionMatrix,
+        modelViewMatrix: modelViewMatrix,
+    };
+}
+//
+// Draw the scene.
+//
+function drawOneCube(gl, programInfo, center, size, texture, deltaTime) {
+    var vertex = [];
+    {
+        vertex.push(center[0] + size[1] / 2); vertex.push(center[1] + size[0] / 2); vertex.push(center[2] + size[2] / 2);
+        vertex.push(center[0] - size[1] / 2); vertex.push(center[1] + size[0] / 2); vertex.push(center[2] + size[2] / 2);
+        vertex.push(center[0] + size[1] / 2); vertex.push(center[1] - size[0] / 2); vertex.push(center[2] + size[2] / 2);
+        vertex.push(center[0] - size[1] / 2); vertex.push(center[1] - size[0] / 2); vertex.push(center[2] + size[2] / 2);
+        vertex.push(center[0] + size[1] / 2); vertex.push(center[1] + size[0] / 2); vertex.push(center[2] - size[2] / 2);
+        vertex.push(center[0] - size[1] / 2); vertex.push(center[1] + size[0] / 2); vertex.push(center[2] - size[2] / 2);
+        vertex.push(center[0] + size[1] / 2); vertex.push(center[1] - size[0] / 2); vertex.push(center[2] - size[2] / 2);
+        vertex.push(center[0] - size[1] / 2); vertex.push(center[1] - size[0] / 2); vertex.push(center[2] - size[2] / 2);
+    }
+    const indices = [
+        2, 0, 4, 6,    // front
+        1, 3, 7, 5,    // back
+        3, 1, 0, 2,   // top
+        6, 4, 5, 7,   // bottom
+        0, 1, 5, 4,   // right
+        3, 2, 6, 7   // left
+    ];
+
+    const textureCoordinates = [
+        0.0, 0.0,
+        1.0, 0.0,
+        1.0, 1.0,
+        0.0, 1.0
+    ];
+    var buffers;
+    var positions;
+    var index;
+
+    matrix = createMatrix(gl);
+    projectionMatrix = matrix.projectionMatrix;
+    modelViewMatrix = matrix.modelViewMatrix;
+
+
+    for (let face_index = 0; face_index < 6; face_index++) {
+        positions = [];
+        for (var i = 0; i < 4; i++) {
+            for (var j = 0; j < 3; j++) {
+                positions.push(vertex[indices[face_index * 4 + i] * 3 + j]);
+            }
+        }
+        index = [
+            0, 1, 2, 0, 2, 3
+        ];
+        buffers = initBuffers(gl, positions, textureCoordinates, index);
+        drawOneFace(gl, programInfo, buffers, texture[face_index], projectionMatrix, modelViewMatrix);
+    }
+
+    //计算顶点坐标
+    calVertexPos(gl, programInfo, vertex, projectionMatrix, modelViewMatrix);
+
+}
+
+function findv(sort, vertexs) {
+    var max = [-100, -100];
+    var min = [100, 100];
+    if (sort == "max") {
+        for (var i = 0; i < vertexs.length; i++) {
+            if (vertexs[i][0] > max[0])
+                max[0] = vertexs[i][0];
+            if (vertexs[i][1] > max[1])
+                max[1] = vertexs[i][1];
+        }
+        return max;
+    }
+    if (sort == "min") {
+        for (var i = 0; i < vertexs.length; i++) {
+            if (vertexs[i][0] < min[0])
+                min[0] = vertexs[i][0];
+            if (vertexs[i][1] < min[1])
+                min[1] = vertexs[i][1];
+        }
+        return min;
+    }
+}
+
+function calVertexPos(gl, programInfo, vertex, projectionMatrix, modelViewMatrix) {
+    const width = gl.canvas.clientWidth;
+    const height = gl.canvas.clientHeight;
+    var position = [];  //点的集合
+    var vert_pos = [];  //点
+    var visible = [];   //点是否可见
+    var flag;
+    var left, right, up, down;
+    var VertexPosition = vec3.create();
+    var gl_Position = vec3.create();
+    var out = mat4.create();
+
+    //=============================================
+    var phi_left = -0.64;
+    var phi_right = -0.42;
+    var invisible = [
+        [-0.35, 0.5, -0.5],
+        [-0.35, 0.5, 0.5]
+    ]; //不可见的点的集合
+    var vis_right = [
+        [-0.35, 1.5, 0.5],
+        [-0.35, 1.5, -0.5]
+    ];  //右边的点
+    var vis_left = [
+        [-0.35, -0.5, 0.5],
+        [-0.35, -0.5, -0.5]
+    ];  //左边的点
+    //=============================================
+
+
+    if (phi >= phi_right) {
+        //右边的点不可见
+        invisible = invisible.concat(vis_right);
+    }
+    else if (phi <= phi_left) {
+        //左边的点不可见
+        invisible = invisible.concat(vis_left);
+    }
+    else {
+        invisible = invisible.concat(vis_left);
+        invisible = invisible.concat(vis_right);
+    }
+
+    for (let vertex_num = 0; vertex_num < vertex.length / 3; vertex_num++) {
+        flag = 1;   //默认可见
+        for (let temp = 0; temp < invisible.length; temp++) {
+            if ((invisible[temp][0] == vertex[vertex_num * 3]) && (invisible[temp][1] == vertex[vertex_num * 3 + 1]) && (invisible[temp][2] == vertex[vertex_num * 3 + 2])) {
+                flag = 0;
+                break;
+            }
+        }
+        VertexPosition = vec3.set(VertexPosition, vertex[vertex_num * 3], vertex[vertex_num * 3 + 1], vertex[vertex_num * 3 + 2]);
+        out = mat4.multiply(out, projectionMatrix, modelViewMatrix)
+        gl_Position = vec3.transformMat4(gl_Position, VertexPosition, out);
+        vert_pos = [gl_Position[0] * width * 0.5 + width * 0.5, gl_Position[1] * height * 0.5 + height * 0.5];
+        //console.log("Position: x = ", vert_pos[0], " y = ", vert_pos[1]);
+        position.push(vert_pos);
+        visible.push(flag)
+        // var ver = [gl_Position[0], gl_Position[1]];
+        // Vertexs_mat.push(ver);
+    }
+
+    for (let box_num = 0; box_num < position.length / 8; box_num++) {
+        left = width;
+        right = 0;
+        up = 0;
+        down = height;
+        for (let vertex_num = box_num * 8; vertex_num < box_num * 8 + 8; vertex_num++) {
+            if (visible[vertex_num] == 0)
+                continue;
+            if (position[vertex_num][0] < left) left = position[vertex_num][0];
+            if (position[vertex_num][0] > right) right = position[vertex_num][0];
+            if (position[vertex_num][1] > up) up = position[vertex_num][1];
+            if (position[vertex_num][1] < down) down = position[vertex_num][1];
+        }
+        down = height - down;
+        up = height - up;
+
+        bbox.push(left, up, right, down);
+    }
+
+
+
+
+    // var minvertex = findv("min", Vertexs_mat);
+    // var maxvertex = findv("max", Vertexs_mat);
+
+    // positions.push(minvertex[0], minvertex[1], maxvertex[0], minvertex[1], maxvertex[0], maxvertex[1], minvertex[0], maxvertex[1], minvertex[0], minvertex[1]);
+
+    // //    positions = [-1, -1, -1, 1, 1, 1, 1, -1, -1, -1];
+    // var colors = [1, 0, 0, 1,
+    //     1, 0, 0, 1,
+    //     1, 0, 0, 1,
+    //     1, 0, 0, 1,
+    //     1, 0, 0, 1];
+    // var is2d = 1;
+    // var box_buffers = initBoxBuffers(gl, positions, colors, is2d);
+    // var matrix = mat4.fromValues(1, 0, 0, 0,
+    //     0, 1, 0, 0,
+    //     0, 0, 1, 0,
+    //     0, 0, 0, 1);
+    // //drawOneBox(gl, programInfo, box_buffers, matrix, matrix);
+
+}
+
+function drawOneFace(gl, programInfo, buffers, texture, projectionMatrix, modelViewMatrix) {
     // Tell WebGL how to pull out the positions from the position
     // buffer into the vertexPosition attribute
     {
@@ -411,23 +563,33 @@ function loadShader(gl, type, source) {
     return shader;
 }
 
-function sign(index, axis) {
-    if (axis == 0){
-        if (index % 2 == 0) return 1;
-        else return -1;
-    }
-    else if (axis == 1) {
-        if ((index / 2) % 2 == 0) return 1;
-        else return -1;
-    }
-    else if (axis == 2) {
-        if ((index / 4) % 2 == 0) return 1;
-        else return -1;
-    }
-    return 0;
-}
+// function sign(index, axis) {
+//     if (axis == 0) {
+//         if (index % 2 == 0) return 1;
+//         else return -1;
+//     }
+//     else if (axis == 1) {
+//         if ((index / 2) % 2 == 0) return 1;
+//         else return -1;
+//     }
+//     else if (axis == 2) {
+//         if ((index / 4) % 2 == 0) return 1;
+//         else return -1;
+//     }
+//     return 0;
+// }
 
 function change_dist() {
     dist = document.getElementById('far').value;
     document.getElementById('dist_value').innerHTML = dist;
+}
+
+function change_phi() {
+    phi = document.getElementById('phi').value;
+    document.getElementById('phi_value').innerHTML = phi;
+}
+
+function change_theta() {
+    theta = document.getElementById('theta').value;
+    document.getElementById('theta_value').innerHTML = theta;
 }
