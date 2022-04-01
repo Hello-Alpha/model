@@ -1,9 +1,8 @@
-num = 0;
-
+var save_file_flag = false;
+var num = 0;
+var val = 3;
 
 function saveFile() {
-    if (num > 50)
-        return;
     var data = '';
 
     // 创建一个超链接元素，用来下载保存数据的文件

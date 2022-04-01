@@ -75,6 +75,8 @@ function show() {
         loadTexture(gl, "right.png"),    //right
         loadTexture(gl, "left.png")     //left
     ];
+    var argument_list = [];
+    var argument_id = 0;
     //=========================================
     const center = [
         [0.0, 0.0, 0.0],
@@ -87,7 +89,20 @@ function show() {
         0.7,    //width
         1.0     //height
     ]
+    argument = [
+        [-5, -3, 10],   //far: [a,b), 10
+        [-0.7, -0.4, 10],   //phi
+        [0.3, 0.5, 10]  //theta
+    ]
     //=========================================
+
+    for (let i = argument[0][0]; i < argument[0][1]; i += (argument[0][1] - argument[0][0]) / argument[0][2]) {
+        for (let j = argument[1][0]; j < argument[1][1]; j += (argument[1][1] - argument[1][0]) / argument[1][2]) {
+            for (let k = argument[2][0]; k < argument[2][1]; k += (argument[2][1] - argument[2][0]) / argument[2][2]) {
+                argument_list.push([i, j, k]);
+            }
+        }
+    }
 
     var then = 0.0;
     // Draw the scene repeatedly
@@ -106,13 +121,32 @@ function show() {
 
         now *= 0.001;  // convert to seconds
         const deltaTime = now - then;
-        then = now;
-
         bbox = [];
         for (var cube_index = 0; cube_index < center.length; cube_index++) {
             drawOneCube(gl, programInfo, center[cube_index], size, texture, deltaTime);
         }
-        cubeRotation += en_rotate * deltaTime;
+        if (deltaTime >= val && en_rotate == 1) {
+            //更新参数
+            then = now;
+
+            dist = en_rotate * argument_list[argument_id][0];
+            phi = en_rotate * argument_list[argument_id][1];
+            theta = en_rotate * argument_list[argument_id][2];
+            argument_id++;
+            if (argument_id >= argument[0][2] * argument[1][2] * argument[2][2]) {
+                en_rotate = 0;
+            }
+            if (save_file_flag == true) {
+                saveFile();
+            }
+        }
+        if (save_file_flag == true) {
+            en_rotate = 1;
+        }
+        else {
+            en_rotate = 0;
+        }
+
 
         requestAnimationFrame(render);
     }

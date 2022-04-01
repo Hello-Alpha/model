@@ -48,7 +48,7 @@
     <button type="button" name="button" onclick="endscreenshot()">停止定时截图</button>
   </div>
   <script>
-    var val;
+
     function change() {
       val = document.getElementById('range').value;
       // console.log(val);
@@ -57,11 +57,13 @@
     }
 
     function startscreenshot() {
-      val = setInterval(saveFile, 3000);
+      //val = setInterval(saveFile, 3000);
+      save_file_flag = true;
     }
 
     function endscreenshot() {
-      clearInterval(val);
+      //clearInterval(val);
+      save_file_flag = false;
     }
   </script>
 </body>
