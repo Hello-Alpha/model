@@ -1,6 +1,27 @@
-//用注释"===="包含的部分是可以更改的部分
+//=============================================================
+//可以更改的部分
+label = "bud";
+id = "bud_1*1";
+const center = [
+    [0.0, 0.0, 0.0]
+];
+const size = [
+    1.0,    //length
+    0.7,    //width
+    1.0     //height
+];
+argument = [
+    [-6, -3, 4],   //far: [a,b), 10
+    [-0.7, -0.3, 5],   //phi
+    [0.3, 0.5, 5]  //theta
+];
+var phi_vis_right = -0.6;   // 当phi小于这个数的时候右边看得见
+var phi_vis_left = -0.41;   // 当phi大于这个数的时候左边看得见
+var theta_vis_top = 0.4;   // 当theta小于这个数的时候顶上看得见
+//=============================================================
+
 var cubeRotation = 1.0;
-var en_rotate = true;
+var en_rotate = 0;
 var dist = -5;
 var phi = -0.5;
 var theta = 0.5;
@@ -77,28 +98,11 @@ function show() {
     ];
     var argument_list = [];
     var argument_id = 0;
-    //=========================================
-    const center = [
-        [0.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0],
-        [0.0, 1.0, 0.0],
-        [0.0, 1.0, 1.0]
-    ];
-    const size = [
-        1.0,    //length
-        0.7,    //width
-        1.0     //height
-    ]
-    argument = [
-        [-5, -3, 10],   //far: [a,b), 10
-        [-0.7, -0.4, 10],   //phi
-        [0.3, 0.5, 10]  //theta
-    ]
-    //=========================================
 
-    for (let i = argument[0][0]; i < argument[0][1]; i += (argument[0][1] - argument[0][0]) / argument[0][2]) {
-        for (let j = argument[1][0]; j < argument[1][1]; j += (argument[1][1] - argument[1][0]) / argument[1][2]) {
-            for (let k = argument[2][0]; k < argument[2][1]; k += (argument[2][1] - argument[2][0]) / argument[2][2]) {
+
+    for (let i = argument[0][0]; i < argument[0][1] + 0.001; i += (argument[0][1] - argument[0][0]) / (argument[0][2] - 1)) {
+        for (let j = argument[1][0]; j < argument[1][1] + 0.001; j += (argument[1][1] - argument[1][0]) / (argument[1][2] - 1)) {
+            for (let k = argument[2][0]; k < argument[2][1] + 0.001; k += (argument[2][1] - argument[2][0]) / (argument[2][2] - 1)) {
                 argument_list.push([i, j, k]);
             }
         }
@@ -125,7 +129,8 @@ function show() {
         for (var cube_index = 0; cube_index < center.length; cube_index++) {
             drawOneCube(gl, programInfo, center[cube_index], size, texture, deltaTime);
         }
-        if (deltaTime >= val && en_rotate == 1) {
+
+        if (deltaTime >= val / 1000 && en_rotate == 1) {
             //更新参数
             then = now;
 
@@ -133,11 +138,15 @@ function show() {
             phi = en_rotate * argument_list[argument_id][1];
             theta = en_rotate * argument_list[argument_id][2];
             argument_id++;
-            if (argument_id >= argument[0][2] * argument[1][2] * argument[2][2]) {
-                en_rotate = 0;
+            if (argument_id > argument_list.length) {
+                save_file_flag = false;
             }
             if (save_file_flag == true) {
+                download_finish = false;
                 saveFile();
+                while (download_finish == false) {
+                    ;   //阻塞saveFile函数
+                }
             }
         }
         if (save_file_flag == true) {
@@ -270,10 +279,6 @@ function createMatrix(gl) {
     mat4.translate(modelViewMatrix,     // destination matrix
         modelViewMatrix,     // matrix to translate
         [-0.0, 0.0, dist]);  // amount to translate
-    // mat4.rotate(modelViewMatrix,  // destination matrix
-    //     modelViewMatrix,  // matrix to rotate
-    //     1,     // amount to rotate in radians
-    //     [0, 0, 1]);       // axis to rotate around (Z)
     mat4.rotate(modelViewMatrix,  // destination matrix
         modelViewMatrix,  // matrix to rotate
         theta * Math.PI,// amount to rotate in radians
@@ -381,35 +386,66 @@ function calVertexPos(gl, programInfo, vertex, projectionMatrix, modelViewMatrix
     var gl_Position = vec3.create();
     var out = mat4.create();
 
-    //=============================================
-    var phi_left = -0.64;
-    var phi_right = -0.42;
-    var invisible = [
-        [-0.35, 0.5, -0.5],
-        [-0.35, 0.5, 0.5]
-    ]; //不可见的点的集合
-    var vis_right = [
-        [-0.35, 1.5, 0.5],
-        [-0.35, 1.5, -0.5]
-    ];  //右边的点
-    var vis_left = [
-        [-0.35, -0.5, 0.5],
-        [-0.35, -0.5, -0.5]
-    ];  //左边的点
-    //=============================================
-
-
-    if (phi >= phi_right) {
-        //右边的点不可见
-        invisible = invisible.concat(vis_right);
+    var x_min = -size[1] / 2;
+    var z_min, z_max;
+    var y_min, y_max;
+    for (let index = 0; index < center.length; index++) {
+        const element = center[index];
+        if (index == 0) {
+            z_min = z_max = element[2];
+            y_min = y_max = element[1];
+        }
+        else {
+            if (element[2] > z_max) z_max = element[2];
+            if (element[2] < z_min) z_min = element[2];
+            if (element[1] > y_max) y_max = element[1];
+            if (element[1] < y_min) y_min = element[1];
+        }
     }
-    else if (phi <= phi_left) {
-        //左边的点不可见
-        invisible = invisible.concat(vis_left);
+    z_max = z_max * size[2] + size[2] / 2;
+    z_min = z_min * size[2] - size[2] / 2;
+    y_max = y_max * size[0] + size[0] / 2;
+    y_min = y_min * size[0] - size[0] / 2;
+
+    var invisible = [];     //不可见的点的集合
+    var invis_right = [];   //右边的点
+    var invis_left = [];    //左边的点
+    var invis_top = [];     //上面的点
+
+    for (let y = y_min; y < y_max + 0.001; y += size[0]) {
+        if (Math.abs(y - y_min) < 0.001) {
+            // y = y_min
+            for (let z = z_min; z < z_max - 0.001; z += size[2]) {
+                invis_left.push([x_min, y, z]);
+            }
+        }
+        else if (Math.abs(y - y_max) < 0.001) {
+            // y = y_max;
+            for (let z = z_min; z < z_max - 0.001; z += size[2]) {
+                invis_right.push([x_min, y, z]);
+            }
+        }
+        else {
+            for (let z = z_min; z < z_max - 0.001; z += size[2]) {
+                invisible.push([x_min, y, z]);
+            }
+            invis_top.push([x_min, y, z_max]);
+        }
+    }
+    if (theta >= theta_vis_top) {
+        invisible = invisible.concat(invis_top);
+    }
+    if (phi >= phi_vis_left) {
+        //左边的点看得见，右边的点不可见
+        invisible = invisible.concat(invis_right);
+    }
+    else if (phi <= phi_vis_right) {
+        //右边的点看得见，左边的点不可见
+        invisible = invisible.concat(invis_left);
     }
     else {
-        invisible = invisible.concat(vis_left);
-        invisible = invisible.concat(vis_right);
+        invisible = invisible.concat(invis_left);
+        invisible = invisible.concat(invis_right);
     }
 
     for (let vertex_num = 0; vertex_num < vertex.length / 3; vertex_num++) {
@@ -446,7 +482,10 @@ function calVertexPos(gl, programInfo, vertex, projectionMatrix, modelViewMatrix
         }
         down = height - down;
         up = height - up;
-
+        if (left < 0) left = 0;
+        if (up < 0) up = 0;
+        if (right > height) right = height;
+        if (down > width) down = width;
         bbox.push(left, up, right, down);
     }
 
