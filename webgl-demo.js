@@ -1,9 +1,17 @@
 //=============================================================
 //可以更改的部分
 label = "bud";
-id = "bud_1*1";
+id = "bud_3*3";
 const center = [
-    [0.0, 0.0, 0.0]
+    [0.0, -1.0, 0.0],
+    [0.0, -1.0, -1.0],
+    [0.0, 0.0, -1.0],
+    [0.0, -1.0, 1.0],
+    [0.0, 1.0, -1.0],
+    [0.0, 0.0, 0.0],
+    [0.0, 0.0, 1.0],
+    [0.0, 1.0, 0.0],
+    [0.0, 1.0, 1.0]
 ];
 const size = [
     1.0,    //length
@@ -11,7 +19,7 @@ const size = [
     1.0     //height
 ];
 argument = [
-    [-6, -3, 4],   //far: [a,b), 10
+    [-7, -4, 4],   //far: [a,b), 10
     [-0.7, -0.3, 5],   //phi
     [0.3, 0.5, 5]  //theta
 ];
@@ -48,60 +56,60 @@ function loadSkybox(gl, urls) {
     const faceInfos = [
         //右
         {
-          target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
-          url: urls[0],
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+            url: urls[0],
         },
         //左
         {
-          target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
-          url: urls[1],
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+            url: urls[1],
         },
         //上
         {
-          target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
-          url: urls[2],
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+            url: urls[2],
         },
         //下
         {
-          target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
-          url: urls[3],
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+            url: urls[3],
         },
         //后
         {
-          target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
-          url: urls[4],
+            target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+            url: urls[4],
         },
         //前
         {
-          target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
-          url: urls[5],
+            target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+            url: urls[5],
         },
-      ];
-      faceInfos.forEach((faceInfo) => {
-        const {target, url} = faceInfo;
-  
+    ];
+    faceInfos.forEach((faceInfo) => {
+        const { target, url } = faceInfo;
+
         // 初始化为深蓝色
         gl.texImage2D(target, level, internalFormat, width, height, border, srcFormat, srcType, pixel);
-    
+
         // 异步加载图片
         const image = new Image();
         image.src = url;
-        image.onload = function() {
-          //纹理加载完毕后将其绑定至对应cube map的面
-          gl.texImage2D(target, level, internalFormat, srcFormat, srcType, image);
-          if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
-            // Yes, it's a power of 2. Generate mips.
-            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-          }
-          else{
-              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
-              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-          }
+        image.onload = function () {
+            //纹理加载完毕后将其绑定至对应cube map的面
+            gl.texImage2D(target, level, internalFormat, srcFormat, srcType, image);
+            if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+                // Yes, it's a power of 2. Generate mips.
+                gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+            }
+            else {
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+                gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            }
         };
-      });
+    });
     return texture;
 }
 
@@ -114,43 +122,43 @@ show();
 function drawSkybox(gl, sky_programInfo, buffer, skybox, viewMatrix, projectionMatrix) {
     {
         const numComponents = 3;//每次取出3个数值
-        const type =  gl.FLOAT;//取出数据为浮点数类型
+        const type = gl.FLOAT;//取出数据为浮点数类型
         const normalize = false;
         const stride = 0;
         const offset = 0;
-         gl.bindBuffer( gl.ARRAY_BUFFER, buffer.textureCoord);
-         gl.vertexAttribPointer(
-              sky_programInfo.attribLocations.textureCoord,
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer.textureCoord);
+        gl.vertexAttribPointer(
+            sky_programInfo.attribLocations.textureCoord,
             numComponents,
             type,
             normalize,
             stride,
             offset);
-         gl.enableVertexAttribArray(
-              sky_programInfo.attribLocations.textureCoord);
+        gl.enableVertexAttribArray(
+            sky_programInfo.attribLocations.textureCoord);
     }
     // Tell WebGL which indices to use to index the vertices
-     gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, buffer.index);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer.index);
     //webGL使用此程序进行绘制
-     gl.useProgram(  sky_programInfo.program);
+    gl.useProgram(sky_programInfo.program);
     // gl.activeTexture(gl.TEXTURE0);
-     gl.bindTexture( gl.TEXTURE_CUBE_MAP, skybox);
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, skybox);
     // Tell the shader we bound the texture to texture unit 0
-     gl.uniform1i(  sky_programInfo.uniformLocations.uSampler, 0);
-     gl.uniformMatrix4fv(
-          sky_programInfo.uniformLocations.projectionMatrix,
+    gl.uniform1i(sky_programInfo.uniformLocations.uSampler, 0);
+    gl.uniformMatrix4fv(
+        sky_programInfo.uniformLocations.projectionMatrix,
         false,
         projectionMatrix);
-     gl.uniformMatrix4fv(
-          sky_programInfo.uniformLocations.viewMatrix,
+    gl.uniformMatrix4fv(
+        sky_programInfo.uniformLocations.viewMatrix,
         false,
         viewMatrix);
     {
         const offset = 0;
-        const type =  gl.UNSIGNED_SHORT;
+        const type = gl.UNSIGNED_SHORT;
         const vertexCount = 36;
         //按连续的三角形方式以此按点绘制
-         gl.drawElements( gl.TRIANGLES, vertexCount, type, offset);
+        gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
     }
 }
 //天空盒buffer，因为纹理坐标与世界坐标是对应的，使用原点到立方体的向量所采样的点即可实现映射，只需要positions信息即可
@@ -222,26 +230,26 @@ function initSkybox(gl) {
 }
 
 
-    function setProjectionMatrix(gl) {
-        const fieldOfView = 45 * Math.PI / 180;   // in radians
-        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-        const zNear = 0.1;
-        const zFar = 1000.0;
-        const projectionMatrix = mat4.create();
-        mat4.perspective(projectionMatrix,
-            fieldOfView,
-            aspect,
-            zNear,
-            zFar);
-        return projectionMatrix;
+function setProjectionMatrix(gl) {
+    const fieldOfView = 45 * Math.PI / 180;   // in radians
+    const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+    const zNear = 0.1;
+    const zFar = 1000.0;
+    const projectionMatrix = mat4.create();
+    mat4.perspective(projectionMatrix,
+        fieldOfView,
+        aspect,
+        zNear,
+        zFar);
+    return projectionMatrix;
 }
-    
-    function setViewMatrix() {
-        //设置view坐标系
-        const ViewMatrix = mat4.create();
-        mat4.lookAt(ViewMatrix, eye, target, up);
-        return ViewMatrix;
-    }
+
+function setViewMatrix() {
+    //设置view坐标系
+    const ViewMatrix = mat4.create();
+    mat4.lookAt(ViewMatrix, eye, target, up);
+    return ViewMatrix;
+}
 //
 // Start here
 //
@@ -327,33 +335,27 @@ function show() {
         }
     };
     const sky_programInfo = {
-        program:  sky_shaderProgram,
+        program: sky_shaderProgram,
         attribLocations: {
-            textureCoord: gl.getAttribLocation( sky_shaderProgram, 'aTextureCoord'),
+            textureCoord: gl.getAttribLocation(sky_shaderProgram, 'aTextureCoord'),
         },
         uniformLocations: {
-            projectionMatrix: gl.getUniformLocation( sky_shaderProgram, 'uProjectionMatrix'),
-            viewMatrix: gl.getUniformLocation( sky_shaderProgram, 'uViewMatrix'),
-            uSampler: gl.getUniformLocation( sky_shaderProgram, 'uSampler'),
+            projectionMatrix: gl.getUniformLocation(sky_shaderProgram, 'uProjectionMatrix'),
+            viewMatrix: gl.getUniformLocation(sky_shaderProgram, 'uViewMatrix'),
+            uSampler: gl.getUniformLocation(sky_shaderProgram, 'uSampler'),
         },
     };
     var skybox_urls = [
-            // "../texture/background.jpg",
-            // "../texture/background.jpg",
-            // "../texture/background.jpg",
-            // "../texture/background.jpg",
-            // "../texture/background.jpg",
-            // "../texture/background.jpg",
-            "../texture/pavilion_skybox/background.jpg",
-            "../texture/pavilion_skybox/background.jpg",
-            "../texture/pavilion_skybox/background.jpg",
-            "../texture/pavilion_skybox/background.jpg",
-            "../texture/pavilion_skybox/background.jpg",
-            "../texture/pavilion_skybox/background.jpg",
-        ];
-        var skybox = loadSkybox(gl, skybox_urls);
-        // 天空盒
-        const skyboxbuffer = initSkybox(gl);
+        "background.jpg",
+        "background.jpg",
+        "background.jpg",
+        "background.jpg",
+        "background.jpg",
+        "background.jpg",
+    ];
+    var skybox = loadSkybox(gl, skybox_urls);
+    // 天空盒
+    const skyboxbuffer = initSkybox(gl);
     // Here's where we call the routine that builds all the
     // objects we'll be drawing.
     const texture = [
@@ -364,19 +366,20 @@ function show() {
         loadTexture(gl, "right.png"),    //right
         loadTexture(gl, "left.png")     //left
     ];
-    //=========================================
-    const center = [
-        [0.0, 0.0, 0.0],
-        [0.0, 0.0, 1.0],
-        [0.0, 1.0, 0.0],
-        [0.0, 1.0, 1.0]
-    ];
-    const size = [
-        1.0,    //length
-        0.7,    //width
-        1.0     //height
-    ]
-    //=========================================
+
+    var argument_list = [];
+    var argument_id = 0;
+
+
+    for (let i = argument[0][0]; i < argument[0][1] + 0.001; i += (argument[0][1] - argument[0][0]) / (argument[0][2] - 1)) {
+        for (let j = argument[1][0]; j < argument[1][1] + 0.001; j += (argument[1][1] - argument[1][0]) / (argument[1][2] - 1)) {
+            for (let k = argument[2][0]; k < argument[2][1] + 0.001; k += (argument[2][1] - argument[2][0]) / (argument[2][2] - 1)) {
+                argument_list.push([i, j, k]);
+            }
+        }
+    }
+
+
     const projectionMatrix = setProjectionMatrix(gl);
     const viewMatrix = setViewMatrix();
     var then = 0.0;
@@ -396,7 +399,7 @@ function show() {
 
         now *= 0.001;  // convert to seconds
         const deltaTime = now - then;
-        then = now;
+
         drawSkybox(gl, sky_programInfo, skyboxbuffer, skybox, viewMatrix, projectionMatrix);
 
         bbox = [];
