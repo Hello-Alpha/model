@@ -5,9 +5,222 @@ var dist = -5;
 var phi = -0.5;
 var theta = 0.5;
 var bbox = [];  // bounding box: x, y, 宽， 高
+var target = [0, 0, 0];
+var up = [0, 2, 0];
+var eye = [0, 0, 6];
+
+function loadSkybox(gl, urls) {
+    const texture = gl.createTexture(); //1.创建一个GL纹理对象
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture); //2.新创建的纹理对象绑定到 gl.TEXTURE_CUBE 来让它成为当前操作纹理。
+
+    // 初始化纹理
+    const level = 0;
+    const internalFormat = gl.RGBA;
+    const width = 1;
+    const height = 1;
+    const border = 0;
+    const srcFormat = gl.RGBA;
+    const srcType = gl.UNSIGNED_BYTE;
+    const pixel = new Uint8Array([0, 0, 255, 255]);  // 深蓝色
+
+    //天空盒六面信息
+    const faceInfos = [
+        //右
+        {
+          target: gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+          url: urls[0],
+        },
+        //左
+        {
+          target: gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+          url: urls[1],
+        },
+        //上
+        {
+          target: gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+          url: urls[2],
+        },
+        //下
+        {
+          target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+          url: urls[3],
+        },
+        //后
+        {
+          target: gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+          url: urls[4],
+        },
+        //前
+        {
+          target: gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+          url: urls[5],
+        },
+      ];
+      faceInfos.forEach((faceInfo) => {
+        const {target, url} = faceInfo;
+  
+        // 初始化为深蓝色
+        gl.texImage2D(target, level, internalFormat, width, height, border, srcFormat, srcType, pixel);
+    
+        // 异步加载图片
+        const image = new Image();
+        image.src = url;
+        image.onload = function() {
+          //纹理加载完毕后将其绑定至对应cube map的面
+          gl.texImage2D(target, level, internalFormat, srcFormat, srcType, image);
+          if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+            // Yes, it's a power of 2. Generate mips.
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+          }
+          else{
+              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+              gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+          }
+        };
+      });
+    return texture;
+}
+
+function isPowerOf2(value) {
+    return (value & (value - 1)) == 0;
+}
 
 show();
+//雾天天空盒的绘制部分，其纹理坐标与世界坐标是对应的，所以只需要绑定纹理坐标和index信息
+function drawSkybox(gl, sky_programInfo, buffer, skybox, viewMatrix, projectionMatrix) {
+    {
+        const numComponents = 3;//每次取出3个数值
+        const type =  gl.FLOAT;//取出数据为浮点数类型
+        const normalize = false;
+        const stride = 0;
+        const offset = 0;
+         gl.bindBuffer( gl.ARRAY_BUFFER, buffer.textureCoord);
+         gl.vertexAttribPointer(
+              sky_programInfo.attribLocations.textureCoord,
+            numComponents,
+            type,
+            normalize,
+            stride,
+            offset);
+         gl.enableVertexAttribArray(
+              sky_programInfo.attribLocations.textureCoord);
+    }
+    // Tell WebGL which indices to use to index the vertices
+     gl.bindBuffer( gl.ELEMENT_ARRAY_BUFFER, buffer.index);
+    //webGL使用此程序进行绘制
+     gl.useProgram(  sky_programInfo.program);
+    // gl.activeTexture(gl.TEXTURE0);
+     gl.bindTexture( gl.TEXTURE_CUBE_MAP, skybox);
+    // Tell the shader we bound the texture to texture unit 0
+     gl.uniform1i(  sky_programInfo.uniformLocations.uSampler, 0);
+     gl.uniformMatrix4fv(
+          sky_programInfo.uniformLocations.projectionMatrix,
+        false,
+        projectionMatrix);
+     gl.uniformMatrix4fv(
+          sky_programInfo.uniformLocations.viewMatrix,
+        false,
+        viewMatrix);
+    {
+        const offset = 0;
+        const type =  gl.UNSIGNED_SHORT;
+        const vertexCount = 36;
+        //按连续的三角形方式以此按点绘制
+         gl.drawElements( gl.TRIANGLES, vertexCount, type, offset);
+    }
+}
+//天空盒buffer，因为纹理坐标与世界坐标是对应的，使用原点到立方体的向量所采样的点即可实现映射，只需要positions信息即可
+function initSkybox(gl) {
+    var scale = 8;
+    const positions = [
+        // positions          
+        -1.0 * scale, 1.0 * scale, -1.0 * scale,
+        -1.0 * scale, -1.0 * scale, -1.0 * scale,
+        1.0 * scale, -1.0 * scale, -1.0 * scale,
+        1.0 * scale, -1.0 * scale, -1.0 * scale,
+        1.0 * scale, 1.0 * scale, -1.0 * scale,
+        -1.0 * scale, 1.0 * scale, -1.0 * scale,
 
+        -1.0 * scale, -1.0 * scale, 1.0 * scale,
+        -1.0 * scale, -1.0 * scale, -1.0 * scale,
+        -1.0 * scale, 1.0 * scale, -1.0 * scale,
+        -1.0 * scale, 1.0 * scale, -1.0 * scale,
+        -1.0 * scale, 1.0 * scale, 1.0 * scale,
+        -1.0 * scale, -1.0 * scale, 1.0 * scale,
+
+        1.0 * scale, -1.0 * scale, -1.0 * scale,
+        1.0 * scale, -1.0 * scale, 1.0 * scale,
+        1.0 * scale, 1.0 * scale, 1.0 * scale,
+        1.0 * scale, 1.0 * scale, 1.0 * scale,
+        1.0 * scale, 1.0 * scale, -1.0 * scale,
+        1.0 * scale, -1.0 * scale, -1.0 * scale,
+
+        -1.0 * scale, -1.0 * scale, 1.0 * scale,
+        -1.0 * scale, 1.0 * scale, 1.0 * scale,
+        1.0 * scale, 1.0 * scale, 1.0 * scale,
+        1.0 * scale, 1.0 * scale, 1.0 * scale,
+        1.0 * scale, -1.0 * scale, 1.0 * scale,
+        -1.0 * scale, -1.0 * scale, 1.0 * scale,
+
+        -1.0 * scale, 1.0 * scale, -1.0 * scale,
+        1.0 * scale, 1.0 * scale, -1.0 * scale,
+        1.0 * scale, 1.0 * scale, 1.0 * scale,
+        1.0 * scale, 1.0 * scale, 1.0 * scale,
+        -1.0 * scale, 1.0 * scale, 1.0 * scale,
+        -1.0 * scale, 1.0 * scale, -1.0 * scale,
+
+        -1.0 * scale, -1.0 * scale, -1.0 * scale,
+        -1.0 * scale, -1.0 * scale, 1.0 * scale,
+        1.0 * scale, -1.0 * scale, -1.0 * scale,
+        1.0 * scale, -1.0 * scale, -1.0 * scale,
+        -1.0 * scale, -1.0 * scale, 1.0 * scale,
+        1.0 * scale, -1.0 * scale, 1.0 * scale
+    ];
+
+    //在positions中所有点信息已经列齐，index只需按序对应即可
+    var indices = new Array();
+    for (var i = 0; i < 36; i++)
+        indices.push(i);
+
+    const textureCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
+
+    return {
+        textureCoord: textureCoordBuffer,
+        index: indexBuffer,
+    }
+
+}
+
+
+    function setProjectionMatrix(gl) {
+        const fieldOfView = 45 * Math.PI / 180;   // in radians
+        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        const zNear = 0.1;
+        const zFar = 1000.0;
+        const projectionMatrix = mat4.create();
+        mat4.perspective(projectionMatrix,
+            fieldOfView,
+            aspect,
+            zNear,
+            zFar);
+        return projectionMatrix;
+}
+    
+    function setViewMatrix() {
+        //设置view坐标系
+        const ViewMatrix = mat4.create();
+        mat4.lookAt(ViewMatrix, eye, target, up);
+        return ViewMatrix;
+    }
 //
 // Start here
 //
@@ -34,6 +247,33 @@ function show() {
       vTextureCoord = aTextureCoord;
     }
   `;
+    //定义天空盒顶点着色器
+    const sky_vsSource = `
+    attribute vec4 aTextureCoord;   //纹理坐标
+
+    uniform mat4 uProjectionMatrix;  //投影矩阵，用于定位投影
+    uniform mat4 uViewMatrix;  //视角矩阵，用于定位观察位置
+
+    varying highp vec3 vTextureCoord;
+    
+    void main() {
+      vec4 pos = uProjectionMatrix * uViewMatrix * aTextureCoord;  //点坐标位置
+      gl_Position = pos.xyww; //使其深度始终是w/w = 1,欺骗深度检测使天空盒在深处
+      vTextureCoord = aTextureCoord.xyz;
+    }
+  `;
+    //定义天空盒片段着色器
+    const sky_fsSource = `
+    varying highp vec3 vTextureCoord;
+    precision mediump float;
+    uniform samplerCube uSampler;
+
+    void main() {
+        vec4 color=textureCube(uSampler, normalize(vTextureCoord));
+        
+      gl_FragColor = color;
+    }
+  `;
 
     // 片段着色器
     const fsSource = `
@@ -47,6 +287,7 @@ function show() {
     // Initialize a shader program; this is where all the lighting
     // for the vertices and so forth is established.
     const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
+    const sky_shaderProgram = initShaderProgram(gl, sky_vsSource, sky_fsSource);
 
     // Collect all the info needed to use the shader program.
     // Look up which attributes our shader program is using
@@ -64,7 +305,34 @@ function show() {
             uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
         }
     };
-
+    const sky_programInfo = {
+        program:  sky_shaderProgram,
+        attribLocations: {
+            textureCoord: gl.getAttribLocation( sky_shaderProgram, 'aTextureCoord'),
+        },
+        uniformLocations: {
+            projectionMatrix: gl.getUniformLocation( sky_shaderProgram, 'uProjectionMatrix'),
+            viewMatrix: gl.getUniformLocation( sky_shaderProgram, 'uViewMatrix'),
+            uSampler: gl.getUniformLocation( sky_shaderProgram, 'uSampler'),
+        },
+    };
+    var skybox_urls = [
+            // "../texture/background.jpg",
+            // "../texture/background.jpg",
+            // "../texture/background.jpg",
+            // "../texture/background.jpg",
+            // "../texture/background.jpg",
+            // "../texture/background.jpg",
+            "../texture/pavilion_skybox/background.jpg",
+            "../texture/pavilion_skybox/background.jpg",
+            "../texture/pavilion_skybox/background.jpg",
+            "../texture/pavilion_skybox/background.jpg",
+            "../texture/pavilion_skybox/background.jpg",
+            "../texture/pavilion_skybox/background.jpg",
+        ];
+        var skybox = loadSkybox(gl, skybox_urls);
+        // 天空盒
+        const skyboxbuffer = initSkybox(gl);
     // Here's where we call the routine that builds all the
     // objects we'll be drawing.
     const texture = [
@@ -88,7 +356,8 @@ function show() {
         1.0     //height
     ]
     //=========================================
-
+    const projectionMatrix = setProjectionMatrix(gl);
+    const viewMatrix = setViewMatrix();
     var then = 0.0;
     // Draw the scene repeatedly
     function render(now) {
@@ -107,6 +376,7 @@ function show() {
         now *= 0.001;  // convert to seconds
         const deltaTime = now - then;
         then = now;
+        drawSkybox(gl, sky_programInfo, skyboxbuffer, skybox, viewMatrix, projectionMatrix);
 
         bbox = [];
         for (var cube_index = 0; cube_index < center.length; cube_index++) {
